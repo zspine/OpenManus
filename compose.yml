@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  openmanus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Mount the config file directly instead of the whole directory
+      - ./config/config.toml:/app/OpenManus/config/config.toml:ro
+      # Mount data directory for persistence
+      - openmanus_data:/app/OpenManus/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      # You can override config values with environment variables
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}  # This can be set in Coolify
+    # Health check to ensure the container is running properly
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; exit(0 if os.path.exists('/app/OpenManus/config/config.toml') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    command: python main.py
+    stdin_open: true  # Keep STDIN open
+    tty: true         # Allocate a pseudo-TTY
+
+volumes:
+  openmanus_data:
+    # Using named volumes for better persistence with Coolify
